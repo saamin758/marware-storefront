@@ -61,8 +61,12 @@ export default async function ProductDetailPage({ params, searchParams }) {
       category: product.category?.slug,
       limit: 4,
     });
-    const items = relatedRes?.data || relatedRes || [];
-    relatedProducts = items.filter((p) => p.id !== product.id).slice(0, 4);
+    const items = Array.isArray(relatedRes)
+      ? relatedRes
+      : relatedRes?.data || relatedRes?.products || [];
+    relatedProducts = Array.isArray(items)
+      ? items.filter((p) => p.id !== product.id).slice(0, 4)
+      : [];
   } catch (err) {
     console.warn("Could not load related items:", err);
   }

@@ -23,13 +23,14 @@ export async function getCategories() {
 }
 
 export async function getCategoryBySlug(slug) {
+  if (!slug) return null;
   if (typeof window === "undefined") {
     try {
       const store = await getServerStore();
       if (store) {
         const all = store().getCategories();
         const found = all.find(
-          (c) => c.slug?.toLowerCase() === slug?.toLowerCase()
+          (c) => c.slug && c.slug.toLowerCase() === slug.toLowerCase()
         );
         if (found) return found;
         return store().getCategoryBySlug(slug);
@@ -46,23 +47,28 @@ export async function getProducts(params = {}) {
     try {
       const store = await getServerStore();
       if (store) {
-        const { cookies } = await import("next/headers");
-        const cookieStore = await cookies();
-        const rawCookie = cookieStore.get("marware_deleted_products")?.value;
-        const deletedSet = new Set(
-          rawCookie ? rawCookie.split(",").map((s) => s.trim()).filter(Boolean) : []
-        );
+        let deletedSet = new Set();
+        try {
+          const { cookies } = await import("next/headers");
+          const cookieStore = await cookies();
+          const rawCookie = cookieStore.get("marware_deleted_products")?.value;
+          if (rawCookie) {
+            deletedSet = new Set(rawCookie.split(",").map((s) => s.trim()).filter(Boolean));
+          }
+        } catch {}
+
         const res = store().getProducts(params);
-        if (Array.isArray(res)) {
-          return res.filter((p) => !deletedSet.has(p.id) && !deletedSet.has(p.slug));
-        }
-        if (res?.data && Array.isArray(res.data)) {
-          return {
-            ...res,
-            data: res.data.filter((p) => !deletedSet.has(p.id) && !deletedSet.has(p.slug)),
-          };
-        }
-        return res;
+        const list = Array.isArray(res) ? res : res?.products || res?.data || [];
+        const filtered = list.filter((p) => !deletedSet.has(p.id) && !deletedSet.has(p.slug));
+        return {
+          success: true,
+          data: filtered,
+          products: filtered,
+          meta: {
+            ...(res?.meta || {}),
+            total: filtered.length,
+          },
+        };
       }
     } catch (err) {
       console.warn("Direct products fetch error:", err);
@@ -78,26 +84,25 @@ export async function getProducts(params = {}) {
   const queryString = query.toString();
   const res = await apiClient(`/products${queryString ? `?${queryString}` : ""}`);
 
+  let list = Array.isArray(res) ? res : res?.data || res?.products || [];
+
   // Client-side instant filter against persistent deleted products
   if (typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem("marware_deleted_products");
       if (raw) {
         const deletedSet = new Set(raw.split(",").map((s) => s.trim()).filter(Boolean));
-        if (Array.isArray(res)) {
-          return res.filter((p) => !deletedSet.has(p.id) && !deletedSet.has(p.slug));
-        }
-        if (res?.data && Array.isArray(res.data)) {
-          return {
-            ...res,
-            data: res.data.filter((p) => !deletedSet.has(p.id) && !deletedSet.has(p.slug)),
-          };
-        }
+        list = list.filter((p) => !deletedSet.has(p.id) && !deletedSet.has(p.slug));
       }
     } catch {}
   }
 
-  return res;
+  return {
+    success: true,
+    data: list,
+    products: list,
+    meta: res?.meta || { total: list.length },
+  };
 }
 
 export async function getProductBySlug(slug) {

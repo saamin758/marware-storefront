@@ -7,7 +7,13 @@ export default function ProductGrid({
   loading = false,
   emptyTitle,
   emptyDescription,
+  emptyActionLabel,
+  emptyActionHref,
 }) {
+  const items = Array.isArray(products)
+    ? products
+    : products?.data || products?.products || [];
+
   if (loading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
@@ -22,7 +28,7 @@ export default function ProductGrid({
     );
   }
 
-  if (!products || products.length === 0) {
+  if (!items || items.length === 0) {
     return (
       <EmptyState
         title={emptyTitle || "No Products Found"}
@@ -30,13 +36,15 @@ export default function ProductGrid({
           emptyDescription ||
           "There are no published products available in this selection."
         }
+        actionLabel={emptyActionLabel || "Explore All Collections"}
+        actionHref={emptyActionHref || "/collections/all"}
       />
     );
   }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-      {products.map((product) => (
+      {items.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
     </div>

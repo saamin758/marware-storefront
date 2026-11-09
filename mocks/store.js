@@ -195,8 +195,9 @@ function createSessionStoreInstance(sessionId) {
     },
 
     getCategoryBySlug: (slug) => {
+      if (!slug) return null;
       return currentStore.categories.find(
-        (c) => c.slug.toLowerCase() === slug.toLowerCase()
+        (c) => c.slug && c.slug.toLowerCase() === slug.toLowerCase()
       );
     },
 
@@ -223,7 +224,7 @@ function createSessionStoreInstance(sessionId) {
         const catLower = category.toLowerCase();
         result = result.filter(
           (p) =>
-            p.category?.slug?.toLowerCase() === catLower ||
+            (p.category?.slug && p.category.slug.toLowerCase() === catLower) ||
             p.categoryId === category
         );
       }
@@ -294,6 +295,7 @@ function createSessionStoreInstance(sessionId) {
 
       return {
         products: paginated,
+        data: paginated,
         meta: {
           page: pageNum,
           limit: limitNum,

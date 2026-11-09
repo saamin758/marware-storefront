@@ -35,7 +35,8 @@ export default function AdminProductsPage() {
         category: selectedCategory,
         limit: 50,
       });
-      setProducts(res?.data || res || []);
+      const list = Array.isArray(res) ? res : res?.data || res?.products || [];
+      setProducts(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Error loading products:", err);
     } finally {

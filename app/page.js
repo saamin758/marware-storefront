@@ -12,7 +12,10 @@ export default async function HomePage() {
 
   try {
     const productsRes = await getProducts({ limit: 8, sort: "newest" });
-    products = Array.isArray(productsRes) ? productsRes : productsRes?.data || [];
+    const rawList = Array.isArray(productsRes)
+      ? productsRes
+      : productsRes?.data || productsRes?.products || [];
+    products = Array.isArray(rawList) ? rawList : [];
   } catch (err) {
     console.error("Failed to load products on homepage:", err);
   }
@@ -162,11 +165,28 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            {newArrivals.map((prod) => (
-              <ProductCard key={prod.id} product={prod} />
-            ))}
-          </div>
+          {newArrivals.length > 0 ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+              {newArrivals.map((prod) => (
+                <ProductCard key={prod.id} product={prod} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 px-4 border border-hairline bg-stone/20 max-w-xl mx-auto">
+              <p className="font-editorial text-xl sm:text-2xl text-ink font-bold mb-2">
+                New Season Drop Coming Soon
+              </p>
+              <p className="text-muted text-xs sm:text-sm max-w-md mx-auto mb-6 leading-relaxed">
+                Our artisanal capsules and seasonal essentials are currently being curated. Explore our departments or check back soon.
+              </p>
+              <Link
+                href="/collections/all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-surface text-xs uppercase tracking-micro font-semibold hover:bg-neutral-800 transition-colors"
+              >
+                Explore All Collections <ArrowRight size={13} />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

@@ -110,17 +110,22 @@ export default async function CollectionPage({ params, searchParams }) {
       sort,
       limit: 24,
     });
-    products = productsRes?.data || productsRes || [];
+    const rawList = Array.isArray(productsRes)
+      ? productsRes
+      : productsRes?.data || productsRes?.products || [];
+    products = Array.isArray(rawList) ? rawList : [];
     meta = productsRes?.meta || { total: products.length };
   } catch (err) {
     console.error("Failed to load products for category:", err);
+    products = [];
+    meta = { total: 0 };
   }
 
-  const categoryName = category?.name
+  const categoryName = fallback?.name || (category?.name
     ? (category.name.toLowerCase().endsWith("collection") || category.name.toLowerCase().endsWith("goods") || category.name.toLowerCase().endsWith("arrivals") || category.name.toLowerCase().endsWith("archive")
-      ? category.name
-      : `${category.name}'s Collection`)
-    : fallback.name;
+        ? category.name
+        : `${category.name}'s Collection`)
+    : `${slugKey.charAt(0).toUpperCase() + slugKey.slice(1)} Collection`);
   const categoryDescription = category?.description || fallback.description;
   const categoryBreadcrumb = fallback.breadcrumb || category?.name || categoryName;
 
@@ -183,28 +188,31 @@ export default async function CollectionPage({ params, searchParams }) {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/collections/${slug}`}
-            className={`px-3 py-1.5 border transition-colors ${!onSale && !inStock
+            className={`px-3 py-1.5 border transition-colors ${
+              !onSale && !inStock
                 ? "border-ink bg-ink text-surface"
                 : "border-hairline text-muted hover:border-ink"
-              }`}
+            }`}
           >
             All Items
           </Link>
           <Link
             href={`/collections/${slug}?inStock=true`}
-            className={`px-3 py-1.5 border transition-colors ${inStock === "true"
+            className={`px-3 py-1.5 border transition-colors ${
+              inStock === "true"
                 ? "border-ink bg-ink text-surface"
                 : "border-hairline text-muted hover:border-ink"
-              }`}
+            }`}
           >
             In Stock Only
           </Link>
           <Link
             href={`/collections/${slug}?onSale=true`}
-            className={`px-3 py-1.5 border transition-colors ${onSale === "true"
+            className={`px-3 py-1.5 border transition-colors ${
+              onSale === "true"
                 ? "border-sale bg-sale text-surface"
                 : "border-hairline text-muted hover:border-sale"
-              }`}
+            }`}
           >
             Sale Highlights
           </Link>
@@ -216,24 +224,27 @@ export default async function CollectionPage({ params, searchParams }) {
           <div className="flex items-center gap-1">
             <Link
               href={`/collections/${slug}?sort=newest`}
-              className={`px-2 py-1 ${sort === "newest" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
-                }`}
+              className={`px-2 py-1 ${
+                sort === "newest" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
+              }`}
             >
               Newest
             </Link>
             <span className="text-hairline">|</span>
             <Link
               href={`/collections/${slug}?sort=price_asc`}
-              className={`px-2 py-1 ${sort === "price_asc" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
-                }`}
+              className={`px-2 py-1 ${
+                sort === "price_asc" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
+              }`}
             >
               Price Low
             </Link>
             <span className="text-hairline">|</span>
             <Link
               href={`/collections/${slug}?sort=price_desc`}
-              className={`px-2 py-1 ${sort === "price_desc" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
-                }`}
+              className={`px-2 py-1 ${
+                sort === "price_desc" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
+              }`}
             >
               Price High
             </Link>
@@ -246,6 +257,8 @@ export default async function CollectionPage({ params, searchParams }) {
         products={products}
         emptyTitle={`No Products in ${categoryName}`}
         emptyDescription={`Our seasonal ${categoryName} drop will be published shortly. Check back soon or explore our other departments.`}
+        emptyActionLabel="Explore All Collections"
+        emptyActionHref="/collections/all"
       />
     </div>
   );
