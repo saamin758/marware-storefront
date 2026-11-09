@@ -174,10 +174,10 @@ export default function SecretAdminVaultLoginPage() {
             </button>
           </form>
 
-          {/* Fast-Fill Demo Badges (Exclusively in this secret gateway) */}
+          {/* Fast-Fill Badges (Exclusively in this secret gateway) */}
           <div className="mt-8 pt-6 border-t border-[#222222]">
             <p className="text-[9px] uppercase tracking-micro text-[#777777] font-semibold text-center mb-3">
-              One-Click Administrative Demo Profiles:
+              Administrative Quick Access:
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button

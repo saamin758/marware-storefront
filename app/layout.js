@@ -5,7 +5,6 @@ import AnnouncementBar from "@/components/layout/AnnouncementBar";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/cart/CartDrawer";
-import DemoBar from "@/components/ui/DemoBar";
 import MaintenanceGuard from "@/components/layout/MaintenanceGuard";
 
 export const metadata = {
@@ -42,7 +41,6 @@ export default function RootLayout({ children }) {
               <CartDrawer />
               <Footer />
             </MaintenanceGuard>
-            <DemoBar />
           </CartProvider>
         </AuthProvider>
       </body>

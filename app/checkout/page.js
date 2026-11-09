@@ -156,14 +156,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-storefront mx-auto px-4 sm:px-6 lg:px-10 py-12 lg:py-16">
-      {/* Simulation Banner Notice */}
-      <div className="bg-amber-light border border-amber/30 p-4 mb-8 flex items-start gap-3">
-        <Info size={18} className="text-amber flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-ink leading-relaxed">
-          <strong>Demo Sandbox Mode:</strong> Orders and customer sessions are completely isolated in your browser sandbox. Your test actions will not affect other visitors.
-        </p>
-      </div>
-
       <h1 className="font-editorial text-3xl sm:text-4xl font-bold text-ink tracking-tight mb-10 pb-6 border-b border-hairline">
         Checkout & Shipping
       </h1>
@@ -174,17 +166,10 @@ export default function CheckoutPage() {
           <div className="lg:col-span-7 flex flex-col gap-8">
             {/* 1. Customer Contact */}
             <div className="bg-surface border border-hairline p-6">
-              <div className="flex items-center justify-between pb-3 mb-6 border-b border-hairline">
+              <div className="pb-3 mb-6 border-b border-hairline">
                 <h2 className="text-[12px] uppercase tracking-micro font-semibold text-ink">
                   1. Contact Information
                 </h2>
-                <button
-                  type="button"
-                  onClick={fillDemoCustomer}
-                  className="px-2.5 py-1 bg-stone border border-hairline hover:bg-neutral-200 text-[10px] uppercase tracking-micro font-semibold text-ink transition-colors flex items-center gap-1"
-                >
-                  ⚡ Fill Demo Customer
-                </button>
               </div>
 
               <div className="space-y-4">

@@ -129,9 +129,6 @@ export default function Footer() {
         <div className="pt-8 border-t border-hairline flex flex-col sm:flex-row items-center justify-between text-[11px] text-muted gap-4">
           <div>
             <p>© {new Date().getFullYear()} MARWARE. All rights reserved.</p>
-            <p className="text-[10px] text-muted/80 mt-0.5">
-              Agency Portfolio Demo • Client-Isolated Architecture
-            </p>
           </div>
           <div className="flex items-center gap-6 uppercase tracking-micro text-[10px]">
             <Link href="/terms" className="hover:text-ink">Terms of Service</Link>

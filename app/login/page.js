@@ -102,17 +102,6 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        {/* Customer Demo Quick Fill */}
-        <div className="mt-8 pt-6 border-t border-hairline">
-          <button
-            type="button"
-            onClick={fillCustomer}
-            className="w-full py-2.5 text-[11px] uppercase tracking-micro border border-hairline bg-stone hover:bg-neutral-200 text-ink font-semibold transition-colors"
-          >
-            Quick Fill Customer Demo
-          </button>
-        </div>
-
         <div className="mt-6 text-center text-xs text-muted">
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-ink font-medium underline">
