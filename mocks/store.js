@@ -1,8 +1,30 @@
+import fs from "fs";
+import path from "path";
+import os from "os";
 import { initialCategories } from "./data/categories";
 import { initialProducts } from "./data/products";
 import { initialOrders } from "./data/orders";
 import { initialUsers } from "./data/users";
 import { getSessionIdFromRequest } from "@/lib/session";
+
+const PERSIST_DELETED_FILE = path.join(os.tmpdir(), "marware_deleted_product_ids.json");
+
+function loadPersistedDeletedIds() {
+  try {
+    if (fs.existsSync(PERSIST_DELETED_FILE)) {
+      const raw = fs.readFileSync(PERSIST_DELETED_FILE, "utf8");
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch {}
+  return new Set();
+}
+
+function savePersistedDeletedIds(set) {
+  try {
+    fs.writeFileSync(PERSIST_DELETED_FILE, JSON.stringify(Array.from(set)), "utf8");
+  } catch {}
+}
 
 // Global map of isolated session stores (sessionId -> store state)
 const sessionStores = globalThis.__MOCK_SESSION_STORES__ || new Map();
@@ -19,10 +41,15 @@ function cloneData() {
     }
   });
 
+  const persistedDeleted = loadPersistedDeletedIds();
+  const initialFiltered = JSON.parse(JSON.stringify(initialProducts)).filter(
+    (p) => !persistedDeleted.has(p.id) && !persistedDeleted.has(p.slug)
+  );
+
   return {
     categories: JSON.parse(JSON.stringify(initialCategories)),
-    products: JSON.parse(JSON.stringify(initialProducts)),
-    deletedProductIds: new Set(),
+    products: initialFiltered,
+    deletedProductIds: persistedDeleted,
     cart: [],
     orders: JSON.parse(JSON.stringify(initialOrders)),
     users: usersClone,
@@ -634,6 +661,7 @@ function createSessionStoreInstance(sessionId) {
       }
       currentStore.deletedProductIds.add(deleted.id);
       if (deleted.slug) currentStore.deletedProductIds.add(deleted.slug);
+      savePersistedDeletedIds(currentStore.deletedProductIds);
       return {
         success: true,
         message: `Product "${deleted.name}" deleted successfully`,
@@ -941,6 +969,7 @@ export function getMockStore(requestOrSessionId) {
   if (deletedIds.length > 0) {
     if (!store.deletedProductIds) store.deletedProductIds = new Set();
     deletedIds.forEach((id) => store.deletedProductIds.add(id));
+    savePersistedDeletedIds(store.deletedProductIds);
     store.products = store.products.filter(
       (p) => !store.deletedProductIds.has(p.id) && !store.deletedProductIds.has(p.slug)
     );
