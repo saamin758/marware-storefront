@@ -194,6 +194,13 @@ function createSessionStoreInstance(sessionId) {
       return currentStore.categories.filter((c) => c.isActive);
     },
 
+    syncProducts: (list) => {
+      if (Array.isArray(list)) {
+        currentStore.products = [...list];
+      }
+      return currentStore.products;
+    },
+
     getCategoryBySlug: (slug) => {
       if (!slug) return null;
       return currentStore.categories.find(

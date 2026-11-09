@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { mockStore } from "@/mocks/store";
+import { removePersistentProduct, updatePersistentProduct } from "@/lib/catalog-storage";
 
 export async function DELETE(request, { params }) {
   try {
@@ -22,6 +23,7 @@ export async function DELETE(request, { params }) {
 
     const { id } = await params;
     const result = store.deleteProduct(id);
+    await removePersistentProduct(id);
 
     // Extract current deleted list from cookie to append to it
     const cookieHeader = request.headers.get("cookie") || "";
@@ -75,6 +77,7 @@ export async function PATCH(request, { params }) {
     const { id } = await params;
     const body = await request.json();
     const updated = store.updateProduct(id, body);
+    await updatePersistentProduct(id, body);
 
     return NextResponse.json({
       success: true,

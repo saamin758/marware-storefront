@@ -158,8 +158,46 @@ export default function AdminNewProductPage() {
     });
   }, []);
 
+  // Compress and resize images via Canvas to avoid 413 Payload Too Large on Netlify
+  const compressImage = (file, maxWidth = 1200, quality = 0.82) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxWidth) {
+              width = Math.round((width * maxWidth) / height);
+              height = maxWidth;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", quality);
+          resolve(compressed);
+        };
+        img.onerror = () => resolve(e.target.result);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Multi-File Upload Processing (Converts Files to Real-Time Data URLs)
-  const processFiles = (fileList) => {
+  const processFiles = async (fileList) => {
     if (!fileList || fileList.length === 0) return;
     setError(null);
 
@@ -168,33 +206,27 @@ export default function AdminNewProductPage() {
         setError("Only valid image files (PNG, JPG, WEBP, AVIF) are accepted.");
         return false;
       }
-      if (f.size > 10 * 1024 * 1024) {
-        setError(`File "${f.name}" exceeds 10MB limit.`);
-        return false;
-      }
       return true;
     });
 
-    validFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        setGalleryImages((prev) => {
-          const isFirstEver = prev.length === 0;
-          return [
-            ...prev,
-            {
-              id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-              url: dataUrl,
-              name: file.name,
-              size: (file.size / 1024).toFixed(1) + " KB",
-              isPrimary: isFirstEver,
-            },
-          ];
-        });
-      };
-      reader.readAsDataURL(file);
-    });
+    for (const file of validFiles) {
+      const compressedUrl = await compressImage(file);
+      if (!compressedUrl) continue;
+      const sizeKb = ((compressedUrl.length * 0.75) / 1024).toFixed(1);
+      setGalleryImages((prev) => {
+        const isFirstEver = prev.length === 0;
+        return [
+          ...prev,
+          {
+            id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+            url: compressedUrl,
+            name: file.name,
+            size: `${sizeKb} KB`,
+            isPrimary: isFirstEver,
+          },
+        ];
+      });
+    }
   };
 
   // Add Image via Direct Web URL

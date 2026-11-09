@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { mockStore } from "@/mocks/store";
+import { addPersistentProduct } from "@/lib/catalog-storage";
 
 export async function POST(request) {
   try {
@@ -63,6 +64,8 @@ export async function POST(request) {
         },
       ],
     });
+
+    await addPersistentProduct(newProduct);
 
     return NextResponse.json(
       {

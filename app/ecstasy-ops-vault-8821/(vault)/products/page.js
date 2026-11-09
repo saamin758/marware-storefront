@@ -35,7 +35,20 @@ export default function AdminProductsPage() {
         category: selectedCategory,
         limit: 50,
       });
-      const list = Array.isArray(res) ? res : res?.data || res?.products || [];
+      let list = Array.isArray(res) ? res : res?.data || res?.products || [];
+      if (typeof window !== "undefined") {
+        try {
+          const rawCustom = localStorage.getItem("marware_custom_products");
+          if (rawCustom) {
+            const customList = JSON.parse(rawCustom);
+            if (Array.isArray(customList) && customList.length > 0) {
+              const existingIds = new Set(list.map((p) => p.id));
+              const toAdd = customList.filter((p) => !existingIds.has(p.id));
+              list = [...toAdd, ...list];
+            }
+          }
+        } catch {}
+      }
       setProducts(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Error loading products:", err);
@@ -77,6 +90,12 @@ export default function AdminProductsPage() {
       if (product.slug) set.add(product.slug);
       const serialized = Array.from(set).join(",");
       localStorage.setItem("marware_deleted_products", serialized);
+      const rawCustom = localStorage.getItem("marware_custom_products");
+      if (rawCustom) {
+        const customList = JSON.parse(rawCustom);
+        const filtered = customList.filter((p) => p.id !== product.id && p.slug !== product.slug);
+        localStorage.setItem("marware_custom_products", JSON.stringify(filtered));
+      }
       const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
       document.cookie = `marware_deleted_products=${encodeURIComponent(
         serialized

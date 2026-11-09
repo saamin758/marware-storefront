@@ -45,8 +45,13 @@ export async function getCategoryBySlug(slug) {
 export async function getProducts(params = {}) {
   if (typeof window === "undefined") {
     try {
+      const { getPersistentProducts } = await import("@/lib/catalog-storage");
+      const persistentList = await getPersistentProducts();
       const store = await getServerStore();
       if (store) {
+        if (Array.isArray(persistentList)) {
+          store().syncProducts(persistentList);
+        }
         let deletedSet = new Set();
         try {
           const { cookies } = await import("next/headers");
@@ -94,6 +99,16 @@ export async function getProducts(params = {}) {
         const deletedSet = new Set(raw.split(",").map((s) => s.trim()).filter(Boolean));
         list = list.filter((p) => !deletedSet.has(p.id) && !deletedSet.has(p.slug));
       }
+      // Merge custom locally created products if not already included
+      const rawCustom = localStorage.getItem("marware_custom_products");
+      if (rawCustom) {
+        const customList = JSON.parse(rawCustom);
+        if (Array.isArray(customList) && customList.length > 0) {
+          const existingIds = new Set(list.map((p) => p.id));
+          const toAdd = customList.filter((p) => !existingIds.has(p.id));
+          list = [...toAdd, ...list];
+        }
+      }
     } catch {}
   }
 
@@ -115,8 +130,13 @@ export async function getProductBySlug(slug) {
         rawCookie ? rawCookie.split(",").map((s) => s.trim()).filter(Boolean) : []
       );
       if (deletedSet.has(slug)) return null;
+      const { getPersistentProducts } = await import("@/lib/catalog-storage");
+      const persistentList = await getPersistentProducts();
       const store = await getServerStore();
       if (store) {
+        if (Array.isArray(persistentList)) {
+          store().syncProducts(persistentList);
+        }
         const prod = store().getProductBySlug(slug);
         if (prod && (deletedSet.has(prod.id) || deletedSet.has(prod.slug))) {
           return null;
@@ -139,7 +159,22 @@ export async function getProductBySlug(slug) {
       }
     } catch {}
   }
-  const res = await apiClient(`/products/${encodeURIComponent(slug)}`);
+  let res = null;
+  try {
+    res = await apiClient(`/products/${encodeURIComponent(slug)}`);
+  } catch {}
+
+  if (!res && typeof window !== "undefined") {
+    try {
+      const rawCustom = localStorage.getItem("marware_custom_products");
+      if (rawCustom) {
+        const customList = JSON.parse(rawCustom);
+        const found = customList.find((p) => p.slug === slug || p.id === slug);
+        if (found) return found;
+      }
+    } catch {}
+  }
+
   if (res && typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem("marware_deleted_products");
