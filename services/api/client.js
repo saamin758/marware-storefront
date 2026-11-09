@@ -6,7 +6,7 @@
 
 import { getClientSessionId } from "@/lib/session";
 
-function getBaseUrl() {
+async function getBaseUrl() {
   const base = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/v1";
   if (base.startsWith("http://") || base.startsWith("https://")) {
     return base;
@@ -14,7 +14,21 @@ function getBaseUrl() {
   if (typeof window !== "undefined") {
     return base;
   }
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `http://localhost:${process.env.PORT || 3000}`;
+  let siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!siteUrl) {
+    try {
+      const { headers } = await import("next/headers");
+      const h = await headers();
+      const host = h.get("x-forwarded-host") || h.get("host");
+      const proto = h.get("x-forwarded-proto") || "https";
+      if (host) {
+        siteUrl = `${proto}://${host}`;
+      }
+    } catch {}
+  }
+  if (!siteUrl) {
+    siteUrl = process.env.NODE_ENV === "production" ? "https://marware.netlify.app" : "http://localhost:3000";
+  }
   return `${siteUrl.replace(/\/$/, "")}${base.startsWith("/") ? "" : "/"}${base}`;
 }
 
@@ -26,7 +40,7 @@ function getAuthToken() {
 }
 
 export async function apiClient(endpoint, options = {}) {
-  const baseUrl = getBaseUrl();
+  const baseUrl = await getBaseUrl();
   const url = endpoint.startsWith("http") ? endpoint : `${baseUrl}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
   
   const headers = {

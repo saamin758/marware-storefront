@@ -3,8 +3,47 @@ import { notFound } from "next/navigation";
 import ProductGrid from "@/components/storefront/ProductGrid";
 import { getCategoryBySlug, getProducts } from "@/services/api/catalog";
 
+const CATEGORY_METADATA_FALLBACK = {
+  men: {
+    name: "Men's Collection",
+    breadcrumb: "Men",
+    description: "Tailored shirts, casual polos, luxury Panjabis, and denim crafted for modern gentlemen.",
+  },
+  women: {
+    name: "Women's Collection",
+    breadcrumb: "Women",
+    description: "Contemporary dresses, elegant tops, Kurti sets, and relaxed silhouettes.",
+  },
+  lifestyle: {
+    name: "Lifestyle & Leather Goods",
+    breadcrumb: "Lifestyle",
+    description: "Curated leather goods, bespoke accessories, and handcrafted lifestyle essentials.",
+  },
+  "new-arrivals": {
+    name: "New Arrivals",
+    breadcrumb: "New Arrivals",
+    description: "Freshly dropped season capsules and limited-run editorial essentials.",
+  },
+  sale: {
+    name: "Sale Archive",
+    breadcrumb: "Sale",
+    description: "Seasonal archives and special promotional pricing up to 40% off.",
+  },
+  all: {
+    name: "All Products",
+    breadcrumb: "All Products",
+    description: "Curated wardrobe staples crafted with timeless precision, natural textiles, and architectural structure.",
+  },
+};
+
 export async function generateMetadata({ params }) {
   const { slug } = await params;
+  const slugKey = (slug || "").toLowerCase();
+  const fallback = CATEGORY_METADATA_FALLBACK[slugKey] || {
+    name: `${slugKey.charAt(0).toUpperCase() + slugKey.slice(1)} Collection`,
+    description: "Explore our contemporary fashion and lifestyle apparel collection.",
+  };
+
   let category = null;
   try {
     category = await getCategoryBySlug(slug);
@@ -12,10 +51,8 @@ export async function generateMetadata({ params }) {
     console.error("Failed to fetch category metadata:", err);
   }
 
-  const title = category?.name ? `${category.name}'s Collection` : "Collection";
-  const description =
-    category?.description ||
-    "Explore our contemporary fashion and lifestyle apparel collection.";
+  const title = category?.name ? `${category.name}'s Collection` : fallback.name;
+  const description = category?.description || fallback.description;
 
   return {
     title: `${title} | MARWARE`,
@@ -46,6 +83,13 @@ export default async function CollectionPage({ params, searchParams }) {
   let products = [];
   let meta = { total: 0 };
 
+  const slugKey = (slug || "").toLowerCase();
+  const fallback = CATEGORY_METADATA_FALLBACK[slugKey] || {
+    name: `${slugKey.charAt(0).toUpperCase() + slugKey.slice(1)} Collection`,
+    breadcrumb: slugKey.charAt(0).toUpperCase() + slugKey.slice(1),
+    description: "Curated wardrobe staples crafted with timeless precision, natural textiles, and architectural structure.",
+  };
+
   try {
     category = await getCategoryBySlug(slug);
   } catch (err) {
@@ -72,7 +116,13 @@ export default async function CollectionPage({ params, searchParams }) {
     console.error("Failed to load products for category:", err);
   }
 
-  const categoryName = category?.name || (slug === "sale" ? "Sale Archive" : slug === "new-arrivals" ? "New Arrivals" : "All Products");
+  const categoryName = category?.name
+    ? (category.name.toLowerCase().endsWith("collection") || category.name.toLowerCase().endsWith("goods") || category.name.toLowerCase().endsWith("arrivals") || category.name.toLowerCase().endsWith("archive")
+      ? category.name
+      : `${category.name}'s Collection`)
+    : fallback.name;
+  const categoryDescription = category?.description || fallback.description;
+  const categoryBreadcrumb = fallback.breadcrumb || category?.name || categoryName;
 
   const breadcrumbsSchema = {
     "@context": "https://schema.org",
@@ -82,13 +132,13 @@ export default async function CollectionPage({ params, searchParams }) {
         "@type": "ListItem",
         position: 1,
         name: "Home",
-        item: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+        item: process.env.NEXT_PUBLIC_SITE_URL || "https://marware.netlify.app",
       },
       {
         "@type": "ListItem",
         position: 2,
         name: categoryName,
-        item: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/collections/${slug}`,
+        item: `${process.env.NEXT_PUBLIC_SITE_URL || "https://marware.netlify.app"}/collections/${slug}`,
       },
     ],
   };
@@ -107,7 +157,7 @@ export default async function CollectionPage({ params, searchParams }) {
           Home
         </Link>
         <span>/</span>
-        <span className="text-ink font-medium">{categoryName}</span>
+        <span className="text-ink font-medium">{categoryBreadcrumb}</span>
       </nav>
 
       {/* Header & Title */}
@@ -118,8 +168,7 @@ export default async function CollectionPage({ params, searchParams }) {
               {categoryName}
             </h1>
             <p className="text-muted text-sm sm:text-base max-w-2xl leading-relaxed">
-              {category?.description ||
-                "Curated wardrobe staples crafted with timeless precision, natural textiles, and architectural structure."}
+              {categoryDescription}
             </p>
           </div>
           <span className="text-xs uppercase tracking-micro text-muted font-medium tabular-nums">
@@ -134,31 +183,28 @@ export default async function CollectionPage({ params, searchParams }) {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/collections/${slug}`}
-            className={`px-3 py-1.5 border transition-colors ${
-              !onSale && !inStock
+            className={`px-3 py-1.5 border transition-colors ${!onSale && !inStock
                 ? "border-ink bg-ink text-surface"
                 : "border-hairline text-muted hover:border-ink"
-            }`}
+              }`}
           >
             All Items
           </Link>
           <Link
             href={`/collections/${slug}?inStock=true`}
-            className={`px-3 py-1.5 border transition-colors ${
-              inStock === "true"
+            className={`px-3 py-1.5 border transition-colors ${inStock === "true"
                 ? "border-ink bg-ink text-surface"
                 : "border-hairline text-muted hover:border-ink"
-            }`}
+              }`}
           >
             In Stock Only
           </Link>
           <Link
             href={`/collections/${slug}?onSale=true`}
-            className={`px-3 py-1.5 border transition-colors ${
-              onSale === "true"
+            className={`px-3 py-1.5 border transition-colors ${onSale === "true"
                 ? "border-sale bg-sale text-surface"
                 : "border-hairline text-muted hover:border-sale"
-            }`}
+              }`}
           >
             Sale Highlights
           </Link>
@@ -170,27 +216,24 @@ export default async function CollectionPage({ params, searchParams }) {
           <div className="flex items-center gap-1">
             <Link
               href={`/collections/${slug}?sort=newest`}
-              className={`px-2 py-1 ${
-                sort === "newest" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
-              }`}
+              className={`px-2 py-1 ${sort === "newest" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
+                }`}
             >
               Newest
             </Link>
             <span className="text-hairline">|</span>
             <Link
               href={`/collections/${slug}?sort=price_asc`}
-              className={`px-2 py-1 ${
-                sort === "price_asc" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
-              }`}
+              className={`px-2 py-1 ${sort === "price_asc" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
+                }`}
             >
               Price Low
             </Link>
             <span className="text-hairline">|</span>
             <Link
               href={`/collections/${slug}?sort=price_desc`}
-              className={`px-2 py-1 ${
-                sort === "price_desc" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
-              }`}
+              className={`px-2 py-1 ${sort === "price_desc" ? "font-bold text-ink underline" : "text-muted hover:text-ink"
+                }`}
             >
               Price High
             </Link>
@@ -199,7 +242,11 @@ export default async function CollectionPage({ params, searchParams }) {
       </div>
 
       {/* Product Grid */}
-      <ProductGrid products={products} />
+      <ProductGrid
+        products={products}
+        emptyTitle={`No Products in ${categoryName}`}
+        emptyDescription={`Our seasonal ${categoryName} drop will be published shortly. Check back soon or explore our other departments.`}
+      />
     </div>
   );
 }
