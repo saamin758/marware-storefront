@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import LiveOrderListener from "@/components/admin/LiveOrderListener";
 import BrandLogo from "@/components/ui/BrandLogo";
 import {
@@ -18,12 +18,15 @@ import {
   Crown,
   Shield,
   Radio,
+  Menu,
+  X,
 } from "lucide-react";
 
 export default function VaultBackOfficeLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout, isSuperAdmin } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const hasAdminAccess =
     user && (user.role === "admin" || user.role === "super_admin");
@@ -71,8 +74,95 @@ export default function VaultBackOfficeLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col md:flex-row font-sans">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-surface border-r border-hairline flex flex-col justify-between p-6 flex-shrink-0">
+      {/* Mobile Top App Bar (< md) */}
+      <div className="md:hidden bg-surface border-b border-hairline sticky top-0 z-40 px-4 py-3 shadow-xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <BrandLogo href="/" size="sm" />
+            {isSuperAdmin ? (
+              <span className="inline-flex items-center gap-1 text-[8px] uppercase tracking-micro font-bold bg-amber-light text-amber border border-amber/30 px-1.5 py-0.5">
+                <Crown size={9} /> Super
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[8px] uppercase tracking-micro font-bold bg-stone text-ink border border-hairline px-1.5 py-0.5">
+                <Shield size={9} /> Admin
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-ink hover:bg-stone transition-colors border border-hairline rounded-sm"
+            aria-label="Toggle Vault Navigation"
+          >
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
+
+        {/* Mobile Navigation Dropdown */}
+        {mobileMenuOpen && (
+          <div className="pt-4 pb-2 border-t border-hairline mt-3 space-y-3 animate-in fade-in slide-in-from-top-2">
+            <nav className="flex flex-col gap-1">
+              {navLinks.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center justify-between px-3 py-2 text-xs uppercase tracking-micro font-medium transition-colors ${
+                      isActive
+                        ? "bg-ink text-surface font-semibold"
+                        : "text-muted hover:text-ink hover:bg-stone"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon size={15} />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      <span className="text-[9px] px-1.5 py-0.2 bg-stone-dark text-muted">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="pt-3 border-t border-hairline flex flex-col gap-2 text-xs uppercase tracking-micro text-muted">
+              <div className="bg-stone/60 p-2.5 border border-hairline">
+                <span className="text-[10px] text-muted block">Signed in as:</span>
+                <span className="font-semibold text-ink truncate block">
+                  {user?.fullName || user?.email}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <Link
+                  href="/"
+                  className="flex items-center gap-1.5 text-muted hover:text-ink py-1 font-medium"
+                >
+                  <Store size={14} /> Storefront
+                </Link>
+                <button
+                  onClick={() => {
+                    logout();
+                    router.push("/ecstasy-ops-vault-8821");
+                  }}
+                  className="flex items-center gap-1.5 text-destructive hover:underline py-1 font-semibold cursor-pointer"
+                >
+                  <LogOut size={14} /> Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Sidebar (>= md) */}
+      <aside className="hidden md:flex w-64 bg-surface border-r border-hairline flex-col justify-between p-6 flex-shrink-0 min-h-screen sticky top-0 h-screen overflow-y-auto">
         <div>
           <div className="pb-6 mb-6 border-b border-hairline">
             <div className="flex items-center justify-between mb-2">
@@ -166,9 +256,9 @@ export default function VaultBackOfficeLayout({ children }) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto w-full">
         {/* Top Header Bar with Live Order Stream Status & Tunng Sound Engine */}
-        <header className="bg-surface border-b border-hairline px-6 sm:px-10 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 shadow-xs">
+        <header className="bg-surface border-b border-hairline px-4 sm:px-6 lg:px-10 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 shadow-xs">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -183,7 +273,7 @@ export default function VaultBackOfficeLayout({ children }) {
           <LiveOrderListener />
         </header>
 
-        <div className="p-6 sm:p-10 lg:p-12 flex-1">
+        <div className="p-4 sm:p-6 lg:p-10 flex-1 w-full min-w-0 overflow-x-hidden">
           {children}
         </div>
       </main>

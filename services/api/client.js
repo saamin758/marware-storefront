@@ -34,9 +34,13 @@ export async function apiClient(endpoint, options = {}) {
     ...options.headers,
   };
 
-  // Inject Client Session for Multi-User Sandbox Isolation
+  // Inject Client Session for Multi-User Sandbox Isolation & Deleted Products Sync
   if (typeof window !== "undefined") {
     headers["x-session-id"] = getClientSessionId();
+    const deleted = localStorage.getItem("marware_deleted_products");
+    if (deleted) {
+      headers["x-deleted-product-ids"] = deleted;
+    }
   } else {
     try {
       const { cookies } = await import("next/headers");
@@ -44,6 +48,10 @@ export async function apiClient(endpoint, options = {}) {
       const sid = cookieStore.get("ecstasy_session_id")?.value;
       if (sid) {
         headers["x-session-id"] = sid;
+      }
+      const deletedCookie = cookieStore.get("marware_deleted_products")?.value;
+      if (deletedCookie) {
+        headers["x-deleted-product-ids"] = deletedCookie;
       }
     } catch {
       // Ignore if called outside of request scope

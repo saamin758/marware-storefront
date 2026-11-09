@@ -22,6 +22,7 @@ function cloneData() {
   return {
     categories: JSON.parse(JSON.stringify(initialCategories)),
     products: JSON.parse(JSON.stringify(initialProducts)),
+    deletedProductIds: new Set(),
     cart: [],
     orders: JSON.parse(JSON.stringify(initialOrders)),
     users: usersClone,
@@ -87,9 +88,17 @@ export function getSessionStore(sessionId = "default") {
     }
   }
 
+  if (!store.deletedProductIds) {
+    store.deletedProductIds = new Set();
+  }
+
   // Ensure seed products (like tote bag prod-005) have latest color images & variants in existing sessions
+  // but NEVER re-add products that were deleted by an administrator
   if (store.products) {
     initialProducts.forEach((seedProd) => {
+      if (store.deletedProductIds.has(seedProd.id) || store.deletedProductIds.has(seedProd.slug)) {
+        return;
+      }
       const idx = store.products.findIndex((p) => p.id === seedProd.id);
       if (idx !== -1) {
         const p = store.products[idx];
@@ -102,10 +111,15 @@ export function getSessionStore(sessionId = "default") {
           store.products[idx].variants = JSON.parse(JSON.stringify(seedProd.variants));
           store.products[idx].primaryImage = JSON.parse(JSON.stringify(seedProd.primaryImage));
         }
-      } else {
-        store.products.push(JSON.parse(JSON.stringify(seedProd)));
       }
     });
+
+    // Enforce deleted filter
+    if (store.deletedProductIds.size > 0) {
+      store.products = store.products.filter(
+        (p) => !store.deletedProductIds.has(p.id) && !store.deletedProductIds.has(p.slug)
+      );
+    }
   }
 
   return store;
@@ -615,10 +629,16 @@ function createSessionStoreInstance(sessionId) {
         throw new Error("Product not found");
       }
       const deleted = currentStore.products.splice(index, 1)[0];
+      if (!currentStore.deletedProductIds) {
+        currentStore.deletedProductIds = new Set();
+      }
+      currentStore.deletedProductIds.add(deleted.id);
+      if (deleted.slug) currentStore.deletedProductIds.add(deleted.slug);
       return {
         success: true,
         message: `Product "${deleted.name}" deleted successfully`,
         deletedId: deleted.id,
+        deletedSlug: deleted.slug,
       };
     },
 
@@ -880,12 +900,50 @@ function createSessionStoreInstance(sessionId) {
   return instance;
 }
 
+export function getDeletedIdsFromRequest(request) {
+  if (!request) return [];
+  try {
+    const ids = [];
+    const header = request.headers?.get ? request.headers.get("x-deleted-product-ids") : null;
+    if (header) {
+      header.split(",").forEach((s) => {
+        const t = s.trim();
+        if (t) ids.push(t);
+      });
+    }
+    const cookieHeader = request.headers?.get ? request.headers.get("cookie") : null;
+    if (cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)marware_deleted_products=([^;]+)/);
+      if (match && match[1]) {
+        try {
+          decodeURIComponent(match[1]).split(",").forEach((s) => {
+            const t = s.trim();
+            if (t) ids.push(t);
+          });
+        } catch {}
+      }
+    }
+    return ids;
+  } catch {}
+  return [];
+}
+
 export function getMockStore(requestOrSessionId) {
   let sessionId = "default";
+  let deletedIds = [];
   if (typeof requestOrSessionId === "string") {
     sessionId = requestOrSessionId;
   } else if (requestOrSessionId && typeof requestOrSessionId === "object") {
     sessionId = getSessionIdFromRequest(requestOrSessionId);
+    deletedIds = getDeletedIdsFromRequest(requestOrSessionId);
+  }
+  const store = getSessionStore(sessionId);
+  if (deletedIds.length > 0) {
+    if (!store.deletedProductIds) store.deletedProductIds = new Set();
+    deletedIds.forEach((id) => store.deletedProductIds.add(id));
+    store.products = store.products.filter(
+      (p) => !store.deletedProductIds.has(p.id) && !store.deletedProductIds.has(p.slug)
+    );
   }
   return createSessionStoreInstance(sessionId);
 }

@@ -23,10 +23,25 @@ export async function DELETE(request, { params }) {
     const { id } = await params;
     const result = store.deleteProduct(id);
 
-    return NextResponse.json({
+    // Extract current deleted list from cookie to append to it
+    const cookieHeader = request.headers.get("cookie") || "";
+    const match = cookieHeader.match(/(?:^|;\s*)marware_deleted_products=([^;]+)/);
+    const existingList = match && match[1] ? decodeURIComponent(match[1]).split(",").map(s => s.trim()).filter(Boolean) : [];
+    if (!existingList.includes(id)) existingList.push(id);
+    if (result.deletedSlug && !existingList.includes(result.deletedSlug)) existingList.push(result.deletedSlug);
+
+    const response = NextResponse.json({
       success: true,
       data: result,
     });
+
+    response.cookies.set("marware_deleted_products", existingList.join(","), {
+      path: "/",
+      maxAge: 31536000,
+      sameSite: "lax",
+    });
+
+    return response;
   } catch (error) {
     return NextResponse.json(
       {
