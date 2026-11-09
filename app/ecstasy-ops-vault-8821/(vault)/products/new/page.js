@@ -36,23 +36,8 @@ export default function AdminNewProductPage() {
   const [dragActive, setDragActive] = useState(false);
   const [urlInput, setUrlInput] = useState("");
 
-  // Multiple Images Gallery List
-  const [galleryImages, setGalleryImages] = useState([
-    {
-      id: "img-init-1",
-      url: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=1000&auto=format&fit=crop",
-      name: "Front Angle",
-      size: "Preset CDN",
-      isPrimary: true,
-    },
-    {
-      id: "img-init-2",
-      url: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=1000&auto=format&fit=crop",
-      name: "Hover Alternate Angle",
-      size: "Preset CDN",
-      isPrimary: false,
-    },
-  ]);
+  // Multiple Images Gallery List - starts clean with 0 default images
+  const [galleryImages, setGalleryImages] = useState([]);
 
   // General Form Data
   const [formData, setFormData] = useState({
@@ -60,10 +45,10 @@ export default function AdminNewProductPage() {
     categoryId: "",
     priceFrom: "",
     compareAtPriceFrom: "",
-    color: "Standard",
+    color: "",
     fabric: "",
-    fit: "Tailored Standard",
-    careInstructions: "Machine wash cold. Gentle iron.",
+    fit: "",
+    careInstructions: "",
     description: "",
     defaultStock: 20,
   });
@@ -545,7 +530,7 @@ export default function AdminNewProductPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, priceFrom: e.target.value })
                     }
-                    placeholder="2450"
+                    placeholder="e.g. 2500"
                     className="w-full h-12 px-4 text-sm border border-hairline bg-canvas text-ink focus:outline-none focus:border-ink tabular-nums"
                     required
                   />

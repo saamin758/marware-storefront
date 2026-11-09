@@ -48,10 +48,7 @@ export async function POST(request) {
       priceFrom: parseFloat(priceFrom).toFixed(2),
       priceTo: parseFloat(priceFrom).toFixed(2),
       compareAtPriceFrom: null,
-      primaryImage: body.primaryImage || {
-        url: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=1000&auto=format&fit=crop",
-        alt: name,
-      },
+      primaryImage: body.primaryImage || (body.images?.[0] ? { url: body.images[0].url, alt: name } : { url: "", alt: name }),
       images: body.images || [],
       variants: body.variants || [
         {
